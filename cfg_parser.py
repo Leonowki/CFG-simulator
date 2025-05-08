@@ -3,7 +3,7 @@ from node import Node
 
 class CFGParser:
     def __init__(self):
-        # Define the updated grammar
+        # Define the grammar
         self.grammar = {
             'S': [['M', '/', 'D', '/', 'Y'], ['M', '-', 'D', '-', 'Y'], ['M', '.', 'D', '.', 'Y']],
             'M': [['0', 'X'], ['1', 'V']],
@@ -40,12 +40,9 @@ class CFGParser:
         if not re.match(pattern, input_string):
             return False
         
-        # Verify that the separators are consistent
-        if '/' in input_string and ('-' in input_string or '.' in input_string):
-            return False
-        if '-' in input_string and ('/' in input_string or '.' in input_string):
-            return False
-        if '.' in input_string and ('/' in input_string or '-' in input_string):
+        # Ensure both separators are the same
+        separators = re.findall(r'[-/.]', input_string)
+        if len(separators) != 2 or separators[0] != separators[1]:
             return False
         
         # Extract parts of the date string
@@ -69,10 +66,6 @@ class CFGParser:
         if day[0] == '3' and day[1] not in '01':
             return False
         
-        # Check Y (year part) - should be 4 digits
-        if len(year) != 4 or not year.isdigit():
-            return False
-        
         # If all checks pass, the input is valid
         return True
     
@@ -85,33 +78,34 @@ class CFGParser:
         steps = ["S"]
         current = "S"
         
-        # Determine which production rule to use based on the separator
-        separator = None
-        if '/' in input_string:
-            separator = '/'
-            production_index = 0  # S -> M/D/Y
-        elif '-' in input_string:
-            separator = '-'
-            production_index = 1  # S -> M-D-Y
-        else:  # '.' in input_string
-            separator = '.'
-            production_index = 2  # S -> M.D.Y
-        
         # Extract parts of the date string
         parts = re.split(r'[-/.]', input_string)
         month, day, year = parts
         
-        # Step 1: S -> M/D/Y or M-D-Y or M.D.Y
-        replacement = self.grammar['S'][production_index]
-        current = ''.join(replacement)
+        # Determine the separator
+        separator = '/'
+        if '-' in input_string:
+            separator = '-'
+        elif '.' in input_string:
+            separator = '.'
+        
+        # Step 1: S -> M/D/Y or M-D-Y or M.D.Y based on the separator
+        if separator == '/':
+            replacement = "M/D/Y"
+        elif separator == '-':
+            replacement = "M-D-Y"
+        else:  # separator == '.'
+            replacement = "M.D.Y"
+        
+        current = replacement
         steps.append(current)
         
-        # Add children to root node based on the selected production
+        # Add children to root node based on the production used
         m_node = Node("M")
-        d_node = Node("D")
-        y_node = Node("Y")
         sep1_node = Node(separator)
+        d_node = Node("D")
         sep2_node = Node(separator)
+        y_node = Node("Y")
         
         root.add_child(m_node)
         root.add_child(sep1_node)
@@ -134,13 +128,13 @@ class CFGParser:
         
         # Step 3: Replace leftmost non-terminal (X or V)
         if month[0] == '0':
-            replacement = month[1]
+            x_replacement = month[1]
             m_node.children[1].add_child(Node(month[1]))  # X -> digit
-            current = current.replace("X", replacement, 1)
+            current = current.replace("X", x_replacement, 1)
         else:  # month[0] == '1'
-            replacement = month[1]
+            v_replacement = month[1]
             m_node.children[1].add_child(Node(month[1]))  # V -> digit
-            current = current.replace("V", replacement, 1)
+            current = current.replace("V", v_replacement, 1)
         
         steps.append(current)
         
@@ -203,28 +197,23 @@ class CFGParser:
         steps = ["S"]
         current = "S"
         
-        # Determine which production rule to use based on the separator
-        separator = None
-        if '/' in input_string:
-            separator = '/'
-            production_index = 0  # S -> M/D/Y
-        elif '-' in input_string:
-            separator = '-'
-            production_index = 1  # S -> M-D-Y
-        else:  # '.' in input_string
-            separator = '.'
-            production_index = 2  # S -> M.D.Y
-        
         # Extract parts of the date string
         parts = re.split(r'[-/.]', input_string)
         month, day, year = parts
         
-        # Add children to root node based on the selected production
+        # Determine the separator
+        separator = '/'
+        if '-' in input_string:
+            separator = '-'
+        elif '.' in input_string:
+            separator = '.'
+        
+        # Add children to root node
         m_node = Node("M")
-        d_node = Node("D")
-        y_node = Node("Y")
         sep1_node = Node(separator)
+        d_node = Node("D")
         sep2_node = Node(separator)
+        y_node = Node("Y")
         
         root.add_child(m_node)
         root.add_child(sep1_node)
@@ -232,9 +221,15 @@ class CFGParser:
         root.add_child(sep2_node)
         root.add_child(y_node)
         
-        # Step 1: S -> M/D/Y or M-D-Y or M.D.Y
-        replacement = self.grammar['S'][production_index]
-        current = ''.join(replacement)
+        # Step 1: S -> M/D/Y or M-D-Y or M.D.Y based on the separator
+        if separator == '/':
+            replacement = "M/D/Y"
+        elif separator == '-':
+            replacement = "M-D-Y"
+        else:  # separator == '.'
+            replacement = "M.D.Y"
+        
+        current = replacement
         steps.append(current)
         
         # In rightmost derivation, we start with the rightmost non-terminal Y
@@ -324,3 +319,47 @@ class CFGParser:
                     steps.append(current)
         
         return steps, root
+    
+    # def build_tree_from_derivation(self, steps):
+    #     # A simplified tree builder for demonstration purposes
+    #     root = Node("S")
+        
+    #     # For our specific grammar, we can build a tree directly
+    #     m_node = Node("M")
+    #     p1_node = Node("P")
+    #     d_node = Node("D")
+    #     p2_node = Node("P")
+    #     y_node = Node("Y")
+        
+    #     root.add_child(m_node)
+    #     root.add_child(p1_node)
+    #     root.add_child(d_node)
+    #     root.add_child(p2_node)
+    #     root.add_child(y_node)
+        
+    #     # Y always expands to NNNN
+    #     n1 = Node("N")
+    #     n2 = Node("N")
+    #     n3 = Node("N")
+    #     n4 = Node("N")
+    #     y_node.add_child(n1)
+    #     y_node.add_child(n2)
+    #     y_node.add_child(n3)
+    #     y_node.add_child(n4)
+        
+    #     return root
+    
+    # def print_tree(self, node, prefix="", is_last=True, result=None):
+    #     if result is None:
+    #         result = []
+        
+    #     branch = "└── " if is_last else "├── "
+    #     result.append(prefix + branch + node.value)
+        
+    #     prefix += "    " if is_last else "│   "
+        
+    #     for i, child in enumerate(node.children):
+    #         is_last_child = i == len(node.children) - 1
+    #         self.print_tree(child, prefix, is_last_child, result)
+        
+    #     return result

@@ -9,7 +9,7 @@ from tree_visualizer import TreeVisualizer
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("CFG Parser Application(DATE FORMAT)")
+        self.root.title("CFG Parser Application (DATE FORMAT)")
         # Center the spawn of the GUI 
         self.window_width = 1600
         self.window_height = 1000  
@@ -43,13 +43,14 @@ class App:
         grammar_label.grid(row=0, column=0, sticky="n", padx=5, pady=5)
         # Updated CFG
         grammar_text = """S -> M/D/Y | M-D-Y | M.D.Y
-M -> 0X | 1V
-D -> 0X | 1N | 2N | 3Z
-Y -> NNNN
-N -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-X -> 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-V -> 0 | 1 | 2
-Z -> 0 | 1"""
+                M -> 0X | 1V
+                D -> 0X | 1N | 2N | 3Z
+                Y -> NNNN
+                N -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+                X -> 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+                V -> 0 | 1 | 2
+                Z -> 0 | 1"""
+                
         grammar_display = ctk.CTkTextbox(grammar_frame, wrap="word", width=500, height=200, font=ctk.CTkFont(size=16))
         grammar_display.configure(font=ctk.CTkFont(size=16))
         grammar_display.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
@@ -243,4 +244,27 @@ Z -> 0 | 1"""
             leftmost_steps, leftmost_tree = self.parser.leftmost_derivation(input_string)
             rightmost_steps, rightmost_tree = self.parser.rightmost_derivation(input_string)
             
-            # Display
+            # Display leftmost derivation
+            for i, step in enumerate(leftmost_steps):
+                self.leftmost_result.insert(tk.END, f"Step {i+1}: {step}\n")
+            
+            # Display rightmost derivation
+            for i, step in enumerate(rightmost_steps):
+                self.rightmost_result.insert(tk.END, f"Step {i+1}: {step}\n")
+            
+            # Display visual parse trees
+            self.leftmost_tree_canvas.draw_tree(leftmost_tree)
+            self.rightmost_tree_canvas.draw_tree(rightmost_tree)
+            
+        else:
+            self.validation_result.insert(tk.END, f"✗ The input '{input_string}' is NOT valid according to the grammar.\n\n")
+            self.validation_result.insert(tk.END, "The input should match the pattern:\n")
+            self.validation_result.insert(tk.END, "MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY where:\n")
+            self.validation_result.insert(tk.END, "- MM is 01-12 or 00-09\n")
+            self.validation_result.insert(tk.END, "- DD is 01-31 or 00-09 or 20-29 or 30-31\n")
+            self.validation_result.insert(tk.END, "- YYYY is any four-digit number\n")
+        
+        # Make result read-only
+        self.validation_result.configure(state='disabled')
+        self.leftmost_result.configure(state='disabled')
+        self.rightmost_result.configure(state='disabled')   
